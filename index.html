@@ -3853,89 +3853,32 @@ function renderServiceStep() {
 function selectService(svc) {
   state.service = svc;
   state.history = ['service'];
-  // 確保 cust 物件存在
-  if (!state.cust) state.cust = { name: '', phone: '', address: '' };
   // ===== GA4 追蹤:客戶選擇了哪個服務 =====
   if (typeof trackServiceSelect === 'function') trackServiceSelect(svc);
-  // 統一先跳客戶資料填寫頁
-  goToStep('customer-info');
+  // 直接跳到對應服務的第一步(跳過原客戶資料頁)
+  if (svc === 'reno') goToStep('reno-size');
+  else if (svc === 'kitchen') goToStep('kitchen-type');
+  else if (svc === 'bathroom') goToStep('bathroom-count');
 }
 
-/* 客戶資料填寫頁（選完服務後的第一步）*/
+/* 客戶資料填寫頁(已停用 - 跳過此步驟,改為直接進入估價流程)
+   保留此函式以兼容舊版分享連結,自動轉跳到對應服務首頁 */
 function renderCustomerInfoStep() {
-  if (!state.cust) state.cust = { name: '', phone: '', address: '' };
-  const cust = state.cust;
-  const serviceName =
-    state.service === 'reno' ? '🏡 室內裝修' :
-    state.service === 'kitchen' ? '🍳 廚具快速估價' :
-    state.service === 'bathroom' ? '🚿 衛浴整修' : '估價';
+  // 自動轉跳到對應服務的第一步
+  setTimeout(() => {
+    if (state.service === 'reno') goToStep('reno-size');
+    else if (state.service === 'kitchen') goToStep('kitchen-type');
+    else if (state.service === 'bathroom') goToStep('bathroom-count');
+    else goToStep('service');
+  }, 50);
 
-  // 必填欄位驗證
-  const nameOk = (cust.name || '').trim().length > 0;
-  const phoneOk = /^09\d{8}$|^09\d{2}-?\d{3}-?\d{3}$/.test((cust.phone || '').replace(/\s/g, ''));
-  const allOk = nameOk && phoneOk;
-
+  // 顯示一個簡短的轉跳提示(50 毫秒後就會被取代,使用者通常看不到)
   return `
-    <div class="q-card">
-      <div class="q-eyebrow">STEP 02 ‧ ${serviceName}</div>
-      <h2 class="q-title">📝 留下您的聯絡資料</h2>
-      <p class="q-helper">完成估價後我們會主動為您安排現場勘查與後續服務。</p>
-
-      <div class="customer-form">
-        <!-- 姓名 -->
-        <div class="customer-field">
-          <label class="customer-label">
-            姓名 <span class="required">*</span>
-          </label>
-          <input type="text" class="customer-input"
-                 placeholder="請輸入您的姓名"
-                 value="${cust.name || ''}"
-                 oninput="onCustInput('name', this.value)">
-        </div>
-
-        <!-- 聯繫手機 -->
-        <div class="customer-field">
-          <label class="customer-label">
-            聯繫手機 <span class="required">*</span>
-          </label>
-          <input type="tel" class="customer-input"
-                 placeholder="例如：0912345678"
-                 maxlength="13"
-                 value="${cust.phone || ''}"
-                 oninput="onCustInput('phone', this.value)">
-          <div class="customer-hint">
-            ${cust.phone && !phoneOk ? '⚠ 手機格式不正確（09 開頭 10 碼）' : '台灣手機 09 開頭，共 10 碼'}
-          </div>
-        </div>
-
-        <!-- 施工地址 -->
-        <div class="customer-field">
-          <label class="customer-label">
-            施工地址 <span class="optional">（選填）</span>
-          </label>
-          <input type="text" class="customer-input"
-                 placeholder="例如：新竹縣竹北市光明六路 100 號"
-                 value="${cust.address || ''}"
-                 oninput="onCustInput('address', this.value)">
-          <div class="customer-hint">填寫後我們可以更精準安排勘查時間</div>
-        </div>
-      </div>
-
-      <div class="customer-privacy">
-        🔒 您的資料僅用於估價聯繫，不會用於行銷或轉售
-      </div>
-
-      <div class="q-actions">
-        <button class="btn btn-ghost" onclick="goToStep('service')">← 上一步</button>
-        <button class="btn btn-primary" onclick="proceedFromCustomerInfo()"
-                ${allOk ? '' : 'disabled style="opacity:0.4; cursor:not-allowed;"'}>
-          下一步 →
-        </button>
-      </div>
+    <div class="q-card" style="text-align:center; padding:40px;">
+      <div style="font-size:14px; color:var(--muted);">載入中...</div>
     </div>
   `;
 }
-
 function onCustInput(field, val) {
   if (!state.cust) state.cust = { name: '', phone: '', address: '' };
   state.cust[field] = val;
